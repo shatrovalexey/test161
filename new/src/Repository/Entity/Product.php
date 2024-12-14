@@ -1,13 +1,17 @@
 <?php
 namespace Raketa\BackendTestTask\Repository\Entity;
 
+use Raketa\BackendTestTask\Infrastructure\Codec;
+
 readonly class Product
 {
-    public function __construct(
-        private int $id, private string $uuid, private bool $isActive
-        , private string $category, private string $name, private string $description
-        , private string $thumbnail, private float $price
-    ) {}
+	private string $uuid;
+
+    public function __construct(private bool $isActive = true, private int $id_category
+		, private string $name, private string $description, private string $thumbnail, private float $price)
+	{
+		$this->uuid = Codec::Uuid();
+    }
 
     public function getId(): int
     {
@@ -24,9 +28,9 @@ readonly class Product
         return $this->isActive;
     }
 
-    public function getCategory(): string
+    public function getIdCategory(): string
     {
-        return $this->category;
+        return $this->id_category;
     }
 
     public function getName(): string
