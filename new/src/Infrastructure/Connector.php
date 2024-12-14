@@ -9,7 +9,7 @@ use Raketa\BackendTestTask\Infrastructure\Codec;
 /**
 * Обёртка подключения к хранилищу
 */
-class Connector
+abstract class Connector
 {
     /**
     * @var ?static $obj - синглтон
@@ -19,15 +19,10 @@ class Connector
 
     /**
     * Конструктор
-    *
-    * @param Redis $redis
-    * @param int $timeout
     */
     protected function __construct(private string $host, private int $port, private ?string $password
         , private ?int $dbindex, private ?int $timeout) {}
 
-    /**
-    */
     public function getConnection()
     {
         if ($this->_connection) {

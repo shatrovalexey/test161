@@ -16,7 +16,7 @@ class GetCartController extends Controller
 
     public function get(RequestInterface $request): ResponseInterface
     {
-        $cart = $this->cartManager->getCart();
+        $cart = $this->cartManager->getCart($request->id_session);
 
         return $this->_getResponse($cart ? $this->cartView->toArray($cart)
             : ['message' => 'Cart not found',], $cart ? 200 : 404);

@@ -25,7 +25,7 @@ class AddToCartController extends Controller
         }
 
         $cartItem = new CartItem($product->getUuid(), $product->getPrice(), $rawRequest['quantity']);
-        $cart = $this->cartManager->getCart();
+        $cart = $this->cartManager->getCart($request->id_session);
         $cart->addItem($cartItem);
 
         return $this->_getResponse(['success' => true, 'cart' => $this->cartView->toArray($cart),]);

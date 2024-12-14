@@ -8,41 +8,53 @@ use Raketa\BackendTestTask\Infrastructure\Connector;
 
 class CartManager extends Connector
 {
-    public $logger;
+    protected LoggerInterface $logger;
 
-    public function __construct($host, $port, $password)
-    {
-        parent::__construct($host, $port, $password, 1);
-    }
+    public function __construct(private string $host, private int $port, private ?string $password
+        , private ?int $dbindex = 1, private ?int $timeout){}
 
-    public function setLogger(LoggerInterface $logger)
+    /**
+    * @param LoggerInterface $logger
+    *
+    * @return LoggerInterface
+    */
+    public function setLogger(LoggerInterface $logger): LoggerInterface
     {
-        $this->logger = $logger;
+        return $this->logger = $logger;
     }
 
     /**
-     * @inheritdoc
-     */
-    public function saveCart(Cart $cart)
+    * @param Cart $cart
+    * @param string $id_session
+    *
+    * @return bool
+    */
+    public function saveCart(Cart $cart, string $id_session): bool
     {
         try {
-            $this->getConnection()->set($cart, session_id());
-        } catch (Exception $e) {
-            $this->logger->error('Error');
+            $this->getConnection()->set($cart, $id_session);
+        } catch (\Exception $e) {
+            $this->logger->error($e->getMessage());
+
+            return false;
         }
+
+        return true;
     }
 
     /**
-     * @return ?Cart
-     */
-    public function getCart()
+    * @param string $id_session
+    *
+    * @return Cart
+    */
+    public function getCart(string $id_session): Cart
     {
         try {
-            return $this->getConnection()->get(session_id());
-        } catch (Exception $e) {
-            $this->logger->error('Error');
+            return $this->getConnection()->get($id_session);
+        } catch (\Exception $e) {
+            $this->logger->error($e->getMessage());
         }
 
-        return new Cart(session_id(), []);
+        return new Cart($id_session, []);
     }
 }
