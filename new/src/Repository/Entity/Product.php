@@ -5,12 +5,12 @@ use Raketa\BackendTestTask\Infrastructure\Codec;
 
 readonly class Product
 {
-	private string $uuid;
+    private string $uuid;
 
     public function __construct(private bool $isActive = true, private int $id_category
-		, private string $name, private string $description, private string $thumbnail, private float $price)
-	{
-		$this->uuid = Codec::Uuid();
+        , private string $name, private string $description, private string $thumbnail, private float $price)
+    {
+        $this->uuid = Codec::Uuid();
     }
 
     public function getId(): int
