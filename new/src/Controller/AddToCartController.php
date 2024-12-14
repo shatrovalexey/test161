@@ -8,43 +8,26 @@ use Raketa\BackendTestTask\Domain\CartItem;
 use Raketa\BackendTestTask\Repository\CartManager;
 use Raketa\BackendTestTask\Repository\ProductRepository;
 use Raketa\BackendTestTask\View\CartView;
-use Ramsey\Uuid\Uuid;
+use Raketa\BackendTestTask\Controller\Controller;
 
-readonly class AddToCartController
+class AddToCartController extends Controller
 {
-    public function __construct(
-        private ProductRepository $productRepository,
-        private CartView $cartView,
-        private CartManager $cartManager,
-    ) {
-    }
+    public function __construct(private ProductRepository $productRepository,
+        private CartView $cartView, private CartManager $cartManager){}
 
     public function get(RequestInterface $request): ResponseInterface
     {
-        $rawRequest = json_decode($request->getBody()->getContents(), true);
+        $rawRequest = $this->_getRequest($request);
         $product = $this->productRepository->getByUuid($rawRequest['productUuid']);
 
+        if (!$product) {
+            return $this->_getResponse(['success' => false,]);
+        }
+
+        $cartItem = new CartItem($product->getUuid(), $product->getPrice(), $rawRequest['quantity']);
         $cart = $this->cartManager->getCart();
-        $cart->addItem(new CartItem(
-            Uuid::uuid4()->toString(),
-            $product->getUuid(),
-            $product->getPrice(),
-            $rawRequest['quantity'],
-        ));
+        $cart->addItem($cartItem);
 
-        $response = new JsonResponse();
-        $response->getBody()->write(
-            json_encode(
-                [
-                    'status' => 'success',
-                    'cart' => $this->cartView->toArray($cart)
-                ],
-                JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
-            )
-        );
-
-        return $response
-            ->withHeader('Content-Type', 'application/json; charset=utf-8')
-            ->withStatus(200);
+        return $this->_getResponse(['success' => true, 'cart' => $this->cartView->toArray($cart),]);
     }
 }

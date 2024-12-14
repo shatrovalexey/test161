@@ -1,17 +1,14 @@
 <?php
-
-declare(strict_types = 1);
-
 namespace Raketa\BackendTestTask\Domain;
 
-final class Cart
+use Raketa\BackendTestTask\Infrastructure\Codec;
+
+class Cart
 {
-    public function __construct(
-        readonly private string $uuid,
-        readonly private Customer $customer,
-        readonly private string $paymentMethod,
-        private array $items,
-    ) {
+    protected ?string $uuid;
+
+    public function __construct(private Customer $customer, private string $paymentMethod, private array $items) {
+        $this->uuid = Codec::Uuid();
     }
 
     public function getUuid(): string

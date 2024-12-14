@@ -1,19 +1,10 @@
 <?php
-
-declare(strict_types = 1);
-
 namespace Raketa\BackendTestTask\Domain;
 
-final readonly class Customer
+class Customer
 {
-    public function __construct(
-        private int $id,
-        private string $firstName,
-        private string $lastName,
-        private string $middleName,
-        private string $email,
-    ) {
-    }
+    public function __construct(private int $id, private string $firstName
+        , private string $lastName, private string $middleName, private string $email) {}
 
     public function getId(): int
     {
@@ -33,6 +24,11 @@ final readonly class Customer
     public function getMiddleName(): string
     {
         return $this->middleName;
+    }
+
+    public function getFullName(): string
+    {
+        return implode(' ', [$this->lastName, $this->firstName, $this->middleName,]);
     }
 
     public function getEmail(): string

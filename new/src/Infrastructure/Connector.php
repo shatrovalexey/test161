@@ -1,48 +1,123 @@
 <?php
-
-declare(strict_types = 1);
-
 namespace Raketa\BackendTestTask\Infrastructure;
 
 use Raketa\BackendTestTask\Domain\Cart;
 use Redis;
 use RedisException;
+use Raketa\BackendTestTask\Infrastructure\Codec;
 
+/**
+* Обёртка подключения к хранилищу
+*/
 class Connector
 {
-    private Redis $redis;
+    /**
+    * @var ?static $obj - синглтон
+    */
+    protected ?static $_obj;
+    protected ?Redis $_connection;
 
-    public function __construct($redis)
+    /**
+    * Конструктор
+    *
+    * @param Redis $redis
+    * @param int $timeout
+    */
+    protected function __construct(private string $host, private int $port, private ?string $password
+        , private ?int $dbindex, private ?int $timeout) {}
+
+    /**
+    */
+    public function getConnection()
     {
-        return $this->redis = $redis;
+        if ($this->_connection) {
+            try {
+                if ($this->_connection->ping('OK')) {
+                    return $this;
+                }
+            } catch (\Exception $exception) {}
+        }
+
+        $this->_callMethod(function ($self) {
+            $self->_connection = new Redis();
+            $self->_connection->connect($self->host, $self->port);
+            $self->_connection->auth($self->password);
+            $self->_connection->select($self->dbindex);
+        }, $this);
+
+        return $this;
     }
 
     /**
-     * @throws ConnectorException
-     */
-    public function get(Cart $key)
+    * Создание синглтона
+    *
+    * @param Redis $redis
+    * @param int $timeout
+    *
+    * @return static
+    */
+    public function getInstance(string $host, int $port, ?string $password
+        , ?int $dbindex, int $timeout = 24 * 60 * 60): static
     {
-        try {
-            return unserialize($this->redis->get($key));
-        } catch (RedisException $e) {
-            throw new ConnectorException('Connector error', $e->getCode(), $e);
-        }
+        return static::$_obj = static::$_obj ?? new static($host, $port, $password, $dbindex, $timeout);
     }
 
     /**
-     * @throws ConnectorException
-     */
-    public function set(string $key, Cart $value)
+    * Получить значение по ключу
+    *
+    * @param string $key
+    *
+    * @return ?Cart
+    *
+    * @throws ConnectorException
+    */
+    public function get(string $key): ?Cart
     {
-        try {
-            $this->redis->setex($key, 24 * 60 * 60, serialize($value));
-        } catch (RedisException $e) {
-            throw new ConnectorException('Connector error', $e->getCode(), $e);
-        }
+        return $this->_callMethod(fn () => Codec::unserialize($this->redis->get($key), 'serialize'));
     }
 
-    public function has($key): bool
+    /**
+    * Создать ключ-значение
+    *
+    * @param string $key
+    * @param Cart $value
+    *
+    * @return int
+    *
+    * @throws ConnectorException
+    */
+    public function set(string $key, Cart $value): int
     {
-        return $this->redis->exists($key);
+        return $this->_callMethod(fn () => $this->redis->setex($key
+            , $this->timeout, Codec::serialize($value, 'serialize')));
+    }
+
+    /**
+    * Проверить ключ
+    *
+    * @param string $key
+    *
+    * @return bool
+    */
+    public function has(string $key): bool
+    {
+        return $this->_callMethod(fn () => $this->redis->exists($key));
+    }
+
+    /**
+    * Вызов с преобразованием исключения в ConnectorException
+    *
+    * @param \Closure $sub
+    * @param ...array $args
+    *
+    * @return mixed
+    */
+    protected function _callMethod(\Closure $sub, ... $args)
+    {
+        try {
+            return $sub(... $args);
+        } catch(RedisException $e)  {
+            throw new ConnectorException('Connector error', $e->getCode(), $e);
+        }
     }
 }
