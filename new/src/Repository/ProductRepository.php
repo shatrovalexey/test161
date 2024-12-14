@@ -33,7 +33,7 @@ WHERE
             fn (array $row): Product => $this->make($row)
             , $this->connection->fetchAllAssociative('
 SELECT
-    `p1`.`id`
+    `p1`.*
 FROM
     `products` AS `p1`
 
